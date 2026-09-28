@@ -239,32 +239,16 @@ function createTrayImage(text) {
   const menuBarHeight = 22;
   const padding = 5;
   const scale = 2; // Retina 디스플레이를 위한 스케일
-
-  // 물리적 폰트 크기 = 논리적 크기 * scale
-  const physicalFontSize = fontSize * scale;
-
-  // 임시 캔버스로 텍스트 너비 측정 (물리적 폰트 크기로)
+  const lines = text.split("\n");
+  const isTwoLine = lines.length > 1;
+  const physicalFontSize = (isTwoLine ? Math.min(fontSize, 9) : fontSize) * scale;
+  const fontString = `${physicalFontSize}px sans-serif`;
+  // 각 행의 너비를 측정해 가장 긴 행에 맞춤
   const tempCanvas = createCanvas(1, 1);
   const tempCtx = tempCanvas.getContext("2d");
-  // Node canvas library requires simple font string - just size and generic family
-  const fontString = `${physicalFontSize}px sans-serif`;
   tempCtx.font = fontString;
-
-  const parts = text.split(" ");
-  let totalWidth = 0;
-
-  for (let i = 0; i < parts.length; i++) {
-    const part = parts[i];
-    totalWidth += tempCtx.measureText(part).width;
-
-    if (i < parts.length - 1) {
-      const isPrice = !isNaN(part.replace(/,/g, ""));
-      const spacing = isPrice
-        ? tempCtx.measureText("   ").width
-        : tempCtx.measureText(" ").width;
-      totalWidth += spacing;
-    }
-  }
+  const lineWidths = lines.map((line) => tempCtx.measureText(line).width);
+  const totalWidth = Math.max(...lineWidths);
 
   const width = Math.ceil(totalWidth) + padding * 2 * scale;
 
@@ -286,34 +270,35 @@ function createTrayImage(text) {
   const defaultTextColor =
     savedColor || (nativeTheme.shouldUseDarkColors ? "#000000" : "#ffffff");
 
-  let x = padding * scale;
-  const y = (menuBarHeight * scale) / 2 + scale;
+  // 두 행을 메뉴바 높이 안에 배치하고 아래쪽 여백을 남겨 잘림 방지
+  const lineY = isTwoLine
+    ? [7 * scale, 16 * scale]
+    : [(menuBarHeight / 2) * scale + scale];
 
-  for (let i = 0; i < parts.length; i++) {
-    const part = parts[i];
+  lines.forEach((line, lineIndex) => {
+    const parts = line.split(" ");
+    let x = padding * scale;
 
-    if (part.includes("▲") || part.includes("▼")) {
+    for (let i = 0; i < parts.length; i++) {
+      const part = parts[i];
+
       if (part.includes("▲")) {
         ctx.fillStyle = "#FF3B30";
-      } else {
+      } else if (part.includes("▼")) {
         ctx.fillStyle = "#0A84FF";
+      } else {
+        ctx.fillStyle = defaultTextColor;
       }
-    } else {
-      ctx.fillStyle = defaultTextColor;
+
+      ctx.fillText(part, x, lineY[lineIndex]);
+
+      const isPrice = !isNaN(part.replace(/,/g, ""));
+      const spacing = isPrice
+        ? ctx.measureText("   ").width
+        : ctx.measureText(" ").width;
+      x += ctx.measureText(part).width + spacing;
     }
-
-    const drawY =
-      part.includes("▲") || part.includes("▼") || part.includes("%")
-        ? y - scale
-        : y;
-    ctx.fillText(part, x, drawY);
-
-    const isPrice = !isNaN(part.replace(/,/g, ""));
-    const spacing = isPrice
-      ? ctx.measureText("   ").width
-      : ctx.measureText(" ").width;
-    x += ctx.measureText(part).width + spacing;
-  }
+  });
 
   const buffer = canvas.toBuffer("image/png");
 

@@ -26,6 +26,7 @@ class MaanStockApp {
     this.colorPaletteEl = document.getElementById("colorPalette");
     this.sizeOptionsEl = document.getElementById("sizeOptions");
     this.countOptionsEl = document.getElementById("countOptions");
+    this.holdingsListEl = document.getElementById("holdingsList");
     this.loadingOverlayEl = document.getElementById("loadingOverlay");
 
     this.visibleStockCount = 3; // 팝오버에 스크롤 없이 보일 종목 수 (설정에서 변경)
@@ -255,6 +256,84 @@ class MaanStockApp {
         this.selectVisibleStockCount(countOption.dataset.count);
       }
     });
+
+    // 보유 정보(매수가·수량) 입력 이벤트: 입력 완료(change) 시 저장
+    this.holdingsListEl.addEventListener("change", (e) => {
+      const row = e.target.closest(".holding-row");
+      if (row) {
+        this.saveHolding(row);
+      }
+    });
+  }
+
+  isSettingsOpen() {
+    return !this.settingsSectionEl.classList.contains("hidden");
+  }
+
+  // 설정창의 보유 정보 목록 렌더링 (현재 시장 종목만)
+  renderHoldingsSettings() {
+    this.holdingsListEl.innerHTML = "";
+
+    const marketStocks = this.stocks.filter((stock) => stock.market === this.currentMarket);
+
+    if (marketStocks.length === 0) {
+      const empty = document.createElement("div");
+      empty.className = "holdings-empty";
+      empty.textContent = "현재 시장에 추가된 종목이 없습니다.";
+      this.holdingsListEl.appendChild(empty);
+      return;
+    }
+
+    const currencyLabel = this.currentMarket === "us" ? "$" : "원";
+
+    marketStocks.forEach((stock) => {
+      const row = document.createElement("div");
+      row.className = "holding-row";
+      row.dataset.symbol = stock.symbol;
+
+      const nameSpan = document.createElement("span");
+      nameSpan.className = "holding-name";
+      nameSpan.textContent = stock.name;
+      nameSpan.title = stock.name;
+
+      const priceInput = document.createElement("input");
+      priceInput.type = "number";
+      priceInput.min = "0";
+      priceInput.step = "any";
+      priceInput.className = "holding-input";
+      priceInput.dataset.field = "buyPrice";
+      priceInput.placeholder = `매수가(${currencyLabel})`;
+      priceInput.value = stock.buyPrice ?? "";
+
+      const quantityInput = document.createElement("input");
+      quantityInput.type = "number";
+      quantityInput.min = "0";
+      quantityInput.step = "any";
+      quantityInput.className = "holding-input";
+      quantityInput.dataset.field = "quantity";
+      quantityInput.placeholder = "수량";
+      quantityInput.value = stock.quantity ?? "";
+
+      row.appendChild(nameSpan);
+      row.appendChild(priceInput);
+      row.appendChild(quantityInput);
+      this.holdingsListEl.appendChild(row);
+    });
+  }
+
+  async saveHolding(row) {
+    const stock = this.stocks.find(
+      (s) => s.symbol === row.dataset.symbol && s.market === this.currentMarket
+    );
+    if (!stock) return;
+
+    const buyPrice = row.querySelector('[data-field="buyPrice"]').value;
+    const quantity = row.querySelector('[data-field="quantity"]').value;
+    stock.setPosition(buyPrice, quantity);
+
+    await this.saveStocks();
+    this.renderStockList();
+    requestAnimationFrame(() => this.adjustWindowSize());
   }
 
   async loadTrayColorPreference() {
@@ -360,6 +439,7 @@ class MaanStockApp {
       this.loadTrayColorPreference();
       this.loadTrayTextSizePreference();
       this.loadVisibleStockCountUI();
+      this.renderHoldingsSettings();
 
       // 창 크기 조정
       requestAnimationFrame(() => {
@@ -646,6 +726,14 @@ class MaanStockApp {
 
     rightDiv.appendChild(priceSpan);
     rightDiv.appendChild(changeSpan);
+
+    // 매수가·수량이 설정된 종목만 평가손익 표시
+    if (stock.hasPosition()) {
+      const profitSpan = document.createElement("span");
+      profitSpan.className = `stock-profit ${stock.getProfitStatus()}`;
+      profitSpan.textContent = stock.getFormattedProfit();
+      rightDiv.appendChild(profitSpan);
+    }
 
     const deleteBtn = document.createElement("button");
     deleteBtn.className = "delete-button";
@@ -955,6 +1043,11 @@ class MaanStockApp {
     // 종목 리스트 다시 렌더링 (필터링 적용)
     this.renderStockList();
 
+    // 설정창이 열려 있으면 보유 정보 목록도 해당 시장으로 갱신
+    if (this.isSettingsOpen()) {
+      this.renderHoldingsSettings();
+    }
+
     // 메뉴바 업데이트 (현재 시장의 첫 번째 종목 표시)
     this.updateMenuBar();
 
@@ -1051,6 +1144,9 @@ class MaanStockApp {
     this.stocks.splice(index, 1);
     await this.saveStocks();
     this.renderStockList();
+    if (this.isSettingsOpen()) {
+      this.renderHoldingsSettings();
+    }
     this.updateMenuBar();
 
     // 종목 제거 후 창 크기 재조정
