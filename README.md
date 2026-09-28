@@ -34,7 +34,7 @@ Maantano Ticker는 macOS 메뉴바에 실시간 주식 시세를 표시하는 �
 - 📏 **텍스트 크기 조절**: Tiny, Small, Medium, Large 4가지 크기 옵션
 - 📈 **다중 종목 관리**: 여러 종목을 동시에 추적 및 관리
 - 🔍 **스마트 검색**: 종목명/코드 자동완성 검색
-  - 한국: 코스피/코스닥 4,000+ 종목
+  - 한국: 코스피/코스닥 4,000+ 종목 + 네이버 증권 실시간 검색 (신규 상장·ETF 등)
   - 미국: 주요 100+ 종목 (AAPL, MSFT, TSLA 등)
 - ⏱️ **자동 업데이트**: 5초 간격 자동 시세 갱신
 - 🕐 **거래 시간 지원**:
@@ -78,11 +78,11 @@ npm install
 # 개발 모드로 실행
 npm run dev
 
-# 프로덕션 빌드
+# Apple Silicon 앱 빌드 (DMG/ZIP 없이 dist/mac-arm64 생성)
 npm run build
 ```
 
-빌드된 앱은 `dist/` 폴더에 생성됩니다.
+빌드된 앱은 `dist/mac-arm64/` 폴더에 생성됩니다. DMG/ZIP 배포 파일은 `npm run build:mac`으로 생성합니다.
 
 ## 📖 사용법
 

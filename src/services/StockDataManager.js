@@ -55,7 +55,19 @@ class StockDataManager {
     const service = this.serviceFactory.getService(market);
 
     if (market === 'korea') {
-      return service.stocksDB.some(stock => stock.code === symbol);
+      // 로컬 DB 먼저 확인
+      const existsLocally = service.stocksDB.some(stock => stock.code === symbol);
+      if (existsLocally) return true;
+
+      // 로컬 DB에 없으면 (실시간 검색으로 추가한 종목) 네이버 API로 실제 존재 여부 확인
+      // API 오류 시에는 상장폐지로 단정하지 않음 (네트워크 장애로 종목이 삭제되는 것 방지)
+      try {
+        const results = await service.searchFromNaver(symbol);
+        return results.some(stock => stock.symbol === symbol);
+      } catch (error) {
+        console.error('[StockDataManager] 종목 존재 확인 실패:', error.message);
+        return true;
+      }
     } else if (market === 'us') {
       // 로컬 DB 먼저 확인
       const existsLocally = service.stocksDB.some(stock => stock.symbol === symbol);

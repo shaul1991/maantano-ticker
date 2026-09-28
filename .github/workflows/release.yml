@@ -57,7 +57,6 @@ jobs:
 
             ### macOS
             - **Apple Silicon (M1/M2/M3)**: `Maantano-Ticker-${{ steps.get_version.outputs.VERSION }}-arm64.dmg`
-            - **Intel Mac**: `Maantano-Ticker-${{ steps.get_version.outputs.VERSION }}.dmg`
 
             ### 설치 방법
             1. DMG 파일 다운로드

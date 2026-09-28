@@ -126,29 +126,81 @@ class NaverFinanceService {
       }
 
       // 입력 검증: 최대 길이 제한 및 안전한 문자만 허용
-      const searchQuery = query.trim().substring(0, 50).toLowerCase();
+      const searchQuery = query.trim().substring(0, 50);
 
-      // 위험한 문자 필터링 (한글, 영문, 숫자만 허용)
-      if (!/^[가-힣a-zA-Z0-9\s]+$/.test(searchQuery)) {
+      // 위험한 문자 필터링 (한글, 영문, 숫자, 공백, 종목명에 쓰이는 & . - 만 허용)
+      if (!/^[가-힣a-zA-Z0-9\s&.\-]+$/.test(searchQuery)) {
         console.warn('[NaverFinance] 유효하지 않은 검색어:', query);
         return [];
       }
 
-      const results = this.stocksDB.filter(stock => {
-        const nameMatch = stock.name.toLowerCase().includes(searchQuery);
-        const codeMatch = stock.code.includes(searchQuery);
-        return nameMatch || codeMatch;
+      // 네이버 자동완성 API로 실시간 검색 (로컬 DB에 없는 신규 상장·ETF 등 종목 포함)
+      // API 실패 시 로컬 DB 결과만 사용
+      const apiResults = await this.searchFromNaver(searchQuery).catch(error => {
+        console.error('[NaverFinance] 자동완성 API 오류:', error.message);
+        return [];
       });
+      const localResults = this.searchFromLocalDB(searchQuery);
 
-      return results.slice(0, 10).map(stock => ({
-        symbol: stock.code,
-        name: stock.name
-      }));
+      // API 결과 우선, 부족분은 로컬 DB로 채움 (종목코드 기준 중복 제거)
+      const seen = new Set();
+      return [...apiResults, ...localResults]
+        .filter(stock => {
+          if (seen.has(stock.symbol)) return false;
+          seen.add(stock.symbol);
+          return true;
+        })
+        .slice(0, 10);
 
     } catch (error) {
       console.error('Stock search error:', error.message);
       return [];
     }
+  }
+
+  /**
+   * 네이버 증권 자동완성 API를 통한 실시간 국내 종목 검색
+   * 네트워크/API 오류는 호출자에게 전달 (검색 폴백, 상장폐지 판단 보류 구분용)
+   */
+  async searchFromNaver(query) {
+    const response = await axios.get('https://ac.stock.naver.com/ac', {
+      params: { q: query, target: 'stock' },
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36',
+        'Referer': 'https://finance.naver.com/'
+      },
+      timeout: 3000
+    });
+
+    if (!response.data || !Array.isArray(response.data.items)) {
+      return [];
+    }
+
+    return response.data.items
+      .filter(item => item.nationCode === 'KOR' && item.category === 'stock' && item.code && item.name)
+      .slice(0, 10)
+      .map(item => ({
+        symbol: item.code,
+        name: item.name
+      }));
+  }
+
+  /**
+   * 로컬 DB에서 종목 검색
+   */
+  searchFromLocalDB(query) {
+    const searchQuery = query.trim().toLowerCase();
+
+    const results = this.stocksDB.filter(stock => {
+      const nameMatch = stock.name.toLowerCase().includes(searchQuery);
+      const codeMatch = stock.code.toLowerCase().includes(searchQuery);
+      return nameMatch || codeMatch;
+    });
+
+    return results.slice(0, 10).map(stock => ({
+      symbol: stock.code,
+      name: stock.name
+    }));
   }
 
   async getMultipleStockPrices(codes) {

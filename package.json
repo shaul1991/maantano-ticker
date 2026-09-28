@@ -6,8 +6,8 @@
   "scripts": {
     "start": "electron .",
     "dev": "electron . --dev",
-    "build": "electron-builder",
-    "build:mac": "electron-builder --mac",
+    "build": "electron-builder --mac --arm64 --dir",
+    "build:mac": "electron-builder --mac --arm64",
     "release": "standard-version",
     "release:minor": "standard-version --release-as minor",
     "release:major": "standard-version --release-as major",
@@ -51,20 +51,8 @@
       "category": "public.app-category.finance",
       "identity": null,
       "target": [
-        {
-          "target": "dmg",
-          "arch": [
-            "x64",
-            "arm64"
-          ]
-        },
-        {
-          "target": "zip",
-          "arch": [
-            "x64",
-            "arm64"
-          ]
-        }
+        "dmg",
+        "zip"
       ],
       "icon": "src/assets/icon.icns",
       "hardenedRuntime": false,

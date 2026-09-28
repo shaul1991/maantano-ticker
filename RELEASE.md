@@ -94,14 +94,14 @@ GitHub 저장소의 Releases 페이지에서 새 릴리스를 확인할 수 있�
 # 개발 모드 실행
 npm run dev
 
-# 프로덕션 빌드
+# Apple Silicon 앱만 빌드 (dist/mac-arm64)
 npm run build
 
-# macOS만 빌드
+# Apple Silicon DMG/ZIP 배포 파일 빌드
 npm run build:mac
 ```
 
-빌드 결과물은 `dist/` 폴더에 생성됩니다.
+앱은 `dist/mac-arm64/`, 배포 파일은 `dist/` 폴더에 생성됩니다.
 
 ## GitHub Actions 워크플로우
 

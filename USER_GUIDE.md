@@ -17,10 +17,7 @@
 
 1. **GitHub Releases에서 다운로드**
    - [Releases 페이지](https://github.com/YOUR_USERNAME/maantano-ticker/releases)로 이동
-   - 최신 버전의 `.dmg` 또는 `.zip` 파일 다운로드
-   - Intel Mac: `Maantano-Ticker-x.x.x-x64.dmg`
-   - Apple Silicon: `Maantano-Ticker-x.x.x-arm64.dmg`
-   - 유니버설: `Maantano-Ticker-x.x.x-universal.dmg` (양쪽 모두 지원)
+   - Apple Silicon용 `.dmg` 또는 `.zip` 파일 다운로드 (Intel Mac은 지원하지 않음)
 
 2. **설치**
    - DMG 파일을 더블클릭하여 마운트
@@ -65,6 +62,7 @@
 #### 검색 팁
 - **부분 검색**: "삼성" 입력 시 "삼성전자", "삼성물산" 등 모두 표시
 - **코드 검색**: 종목 코드로도 검색 가능 (예: "005930")
+- **실시간 검색**: 네이버 증권 실시간 검색으로 종목 DB에 없는 신규 상장·ETF 등 종목도 검색 가능 (네트워크 오류 시 종목 DB만 검색)
 - **시장 구분**: 각 종목에 KOSPI 또는 KOSDAQ 표시
 - **최대 결과**: 한 번에 최대 10개 결과 표시
 
@@ -155,7 +153,7 @@
 
 1. **감지 메커니즘**
    - 연속으로 조회 실패하는 종목 확인
-   - 종목 DB에 존재하지 않으면 상장폐지로 판단
+   - 종목 DB와 네이버 증권 실시간 검색 모두에 존재하지 않으면 상장폐지로 판단 (조회 실패 시에는 제거하지 않음)
 
 2. **자동 처리**
    - 상장폐지 종목 자동 제거
